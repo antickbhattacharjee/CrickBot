@@ -46,9 +46,6 @@ Endpoints integrated:
    - Sync Gradle.
    - Run on an emulator or physical device.
 
-## 📸 Screenshots
-
-*(Add screenshots here)*
 
 ---
-Developed with ❤️ for Cricket fans.
+Developed with ❤️ for Cricket fans by Antick Bhattacharjee
