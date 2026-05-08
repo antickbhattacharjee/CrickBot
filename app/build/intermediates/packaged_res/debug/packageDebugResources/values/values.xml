@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">CrickBot</string>
+    <style name="Theme.CrickBot" parent="android:Theme.Material.Light.NoActionBar">
+        <item name="android:statusBarColor">#FFBB86FC</item>
+    </style>
+</resources>
