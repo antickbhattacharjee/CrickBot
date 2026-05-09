@@ -222,14 +222,21 @@ class CricketViewModel : ViewModel() {
 
     fun fetchScorecard(match: Match) {
         val matchId = match.matchInfo?.matchId ?: return
+        
+        // Prevent multiple fetches for the same match scorecard if already loading
+        if (_isLoading.value) return
+
         viewModelScope.launch {
             _isLoading.value = true
             try {
-                delay(300)
+                android.util.Log.d("CrickBot", "Fetching scorecard for matchId: $matchId")
                 val response = RetrofitInstance.api.getScorecard(matchId)
+                
                 if (response.isSuccessful) {
                     val scorecardResponse = response.body()
                     val inningsList = scorecardResponse?.scoreCard
+                    
+                    android.util.Log.d("CrickBot", "Scorecard response successful. Innings count: ${inningsList?.size ?: 0}")
 
                     if (!inningsList.isNullOrEmpty()) {
                         _messages.add(
@@ -243,13 +250,16 @@ class CricketViewModel : ViewModel() {
                             )
                         )
                     } else {
+                        android.util.Log.w("CrickBot", "Scorecard list is empty for match $matchId")
                         addBotMessage("Scorecard data is not yet available for this match.")
                     }
                 } else {
+                    val errorBody = response.errorBody()?.string()
+                    android.util.Log.e("CrickBot", "Scorecard fetch failed: ${response.code()} - $errorBody")
                     addBotMessage("Unable to fetch scorecard (Error ${response.code()}).")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("CrickBot", "Error fetching scorecard", e)
+                android.util.Log.e("CrickBot", "Exception fetching scorecard", e)
                 addBotMessage("Network error. Please try again.")
             } finally {
                 _isLoading.value = false
