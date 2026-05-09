@@ -333,7 +333,7 @@ fun ScorecardCard(scorecard: com.example.crickbot.model.ScorecardData) {
                     }
                 }
 
-                val batsmen = innings.batTable?.batsmen
+                val batsmen = innings.batsmen
                 if (!batsmen.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Text("Batting", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
@@ -347,16 +347,26 @@ fun ScorecardCard(scorecard: com.example.crickbot.model.ScorecardData) {
                     }
                     
                     batsmen.forEach { batsman ->
-                        Row(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
-                            Text(batsman.name ?: "-", modifier = Modifier.weight(1f), fontSize = 12.sp)
-                            Text("${batsman.runs ?: 0}", modifier = Modifier.width(30.dp), fontSize = 12.sp)
-                            Text("${batsman.balls ?: 0}", modifier = Modifier.width(30.dp), fontSize = 12.sp)
-                            Text(batsman.srDisplay, modifier = Modifier.width(40.dp), fontSize = 11.sp)
+                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+                            Row(modifier = Modifier.fillMaxWidth()) {
+                                Text(batsman.name ?: "-", modifier = Modifier.weight(1f), fontSize = 12.sp)
+                                Text("${batsman.runs ?: 0}", modifier = Modifier.width(30.dp), fontSize = 12.sp)
+                                Text("${batsman.balls ?: 0}", modifier = Modifier.width(30.dp), fontSize = 12.sp)
+                                Text(batsman.srDisplay, modifier = Modifier.width(40.dp), fontSize = 11.sp)
+                            }
+                            if (!batsman.outDesc.isNullOrEmpty()) {
+                                Text(
+                                    text = batsman.outDesc,
+                                    fontSize = 10.sp,
+                                    color = Color.Gray,
+                                    modifier = Modifier.padding(bottom = 2.dp)
+                                )
+                            }
                         }
                     }
                 }
 
-                val bowlers = innings.bowlTable?.bowlers
+                val bowlers = innings.bowlers
                 if (!bowlers.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("Bowling", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
@@ -379,7 +389,7 @@ fun ScorecardCard(scorecard: com.example.crickbot.model.ScorecardData) {
                     }
                 }
 
-                val fows = innings.fowTable?.fowList
+                val fows = innings.fowData?.fowList
                 if (!fows.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("Fall of Wickets", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)
@@ -388,14 +398,14 @@ fun ScorecardCard(scorecard: com.example.crickbot.model.ScorecardData) {
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                         verticalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
-                        fows.forEach { fow ->
+                        fows.forEachIndexed { idx, fow ->
                             Surface(
                                 color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
                                 shape = RoundedCornerShape(4.dp),
                                 border = androidx.compose.foundation.BorderStroke(0.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                             ) {
                                 Text(
-                                    text = "${fow.runs}/${fow.order ?: "?"} (${fow.name})",
+                                    text = "${fow.runs}/${idx + 1} (${fow.name})",
                                     fontSize = 10.sp,
                                     modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp),
                                     maxLines = 1
@@ -405,7 +415,7 @@ fun ScorecardCard(scorecard: com.example.crickbot.model.ScorecardData) {
                     }
                 }
 
-                val partnerships = innings.partnershipsTable?.partnershipList
+                val partnerships = innings.partnershipData?.partnershipList
                 if (!partnerships.isNullOrEmpty()) {
                     Spacer(modifier = Modifier.height(12.dp))
                     Text("Key Partnerships", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Color.Gray)

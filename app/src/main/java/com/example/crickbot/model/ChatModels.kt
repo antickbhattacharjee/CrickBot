@@ -18,7 +18,8 @@ data class ScorecardData(
 )
 
 data class ScorecardResponse(
-    @SerializedName("scoreCard") val scoreCard: List<InningsScorecard>?
+    // Changed from "scoreCard" to "scorecard" to match API
+    @SerializedName("scorecard") val scoreCard: List<InningsScorecard>?
 )
 
 data class InningsScorecard(
@@ -28,63 +29,58 @@ data class InningsScorecard(
     @SerializedName("score") val score: Int? = null,
     @SerializedName("wickets") val wickets: Int? = null,
     @SerializedName("overs") val overs: Any? = null,
-    @SerializedName("batTable") val batTable: BatTable? = null,
-    @SerializedName("bowlTable") val bowlTable: BowlTable? = null,
-    @SerializedName("fowTable") val fowTable: FowTable? = null,
-    @SerializedName("partnershipsTable") val partnershipsTable: PartnershipTable? = null
+    
+    // Updated to match the "batsman", "bowler", "fow" structure in your JSON
+    @SerializedName("batsman") val batsmen: List<Batsman>? = null,
+    @SerializedName("bowler") val bowlers: List<Bowler>? = null,
+    @SerializedName("fow") val fowData: FowWrapper? = null,
+    @SerializedName("partnership") val partnershipData: PartnershipWrapper? = null
 ) {
     val teamNameDisplay: String get() = batTeamName ?: batteamname ?: "Unknown"
     val runsDisplay: Int get() = runs ?: score ?: 0
     val oversDisplay: String get() = overs?.toString() ?: "0.0"
 }
 
-data class BatTable(
-    @SerializedName("batDiffList") val batsmen: List<Batsman>? = null
+data class FowWrapper(
+    @SerializedName("fow") val fowList: List<FallOfWicket>? = null
 )
 
-data class BowlTable(
-    @SerializedName("bowlDiffList") val bowlers: List<Bowler>? = null
-)
-
-data class FowTable(
-    @SerializedName("fowDiffList") val fowList: List<FallOfWicket>? = null
-)
-
-data class PartnershipTable(
-    @SerializedName("partnershipDiffList") val partnershipList: List<Partnership>? = null
+data class PartnershipWrapper(
+    @SerializedName("partnership") val partnershipList: List<Partnership>? = null
 )
 
 data class FallOfWicket(
-    @SerializedName("wktName") val name: String? = null,
-    @SerializedName("wktRuns") val runs: Int? = null,
-    @SerializedName("wktOver") val over: Double? = null,
-    @SerializedName("wktOrder") val order: Int? = null
+    @SerializedName("batsmanname") val name: String? = null,
+    @SerializedName("runs") val runs: Int? = null,
+    @SerializedName("overnbr") val over: Double? = null,
+    @SerializedName("batsmanid") val id: Int? = null
 )
 
 data class Partnership(
-    @SerializedName("bat1Name") val batter1Name: String? = null,
-    @SerializedName("bat1Runs") val batter1Runs: Int? = null,
-    @SerializedName("bat1Balls") val batter1Balls: Int? = null,
-    @SerializedName("bat2Name") val batter2Name: String? = null,
-    @SerializedName("bat2Runs") val batter2Runs: Int? = null,
-    @SerializedName("bat2Balls") val batter2Balls: Int? = null,
-    @SerializedName("totalRuns") val totalRuns: Int? = null,
-    @SerializedName("totalBalls") val totalBalls: Int? = null
+    @SerializedName("bat1name") val batter1Name: String? = null,
+    @SerializedName("bat1runs") val batter1Runs: Int? = null,
+    @SerializedName("bat1balls") val batter1Balls: Int? = null,
+    @SerializedName("bat2name") val batter2Name: String? = null,
+    @SerializedName("bat2runs") val batter2Runs: Int? = null,
+    @SerializedName("bat2balls") val batter2Balls: Int? = null,
+    @SerializedName("totalruns") val totalRuns: Int? = null,
+    @SerializedName("totalballs") val totalBalls: Int? = null
 )
 
 data class Batsman(
-    @SerializedName("batName") val name: String? = null,
+    @SerializedName("name") val name: String? = null,
     @SerializedName("runs") val runs: Int? = null,
     @SerializedName("balls") val balls: Int? = null,
     @SerializedName("fours") val fours: Int? = null,
     @SerializedName("sixes") val sixes: Int? = null,
-    @SerializedName("strikeRate") val strikeRate: Any? = null
+    @SerializedName("strkrate") val strikeRate: Any? = null,
+    @SerializedName("outdec") val outDesc: String? = null
 ) {
     val srDisplay: String get() = strikeRate?.toString() ?: "0.0"
 }
 
 data class Bowler(
-    @SerializedName("bowlName") val name: String? = null,
+    @SerializedName("name") val name: String? = null,
     @SerializedName("overs") val overs: Any? = null,
     @SerializedName("maidens") val maidens: Int? = null,
     @SerializedName("runs") val runs: Int? = null,
