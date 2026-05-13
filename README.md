@@ -1,35 +1,30 @@
 # CrickBot 🏏
 
-CrickBot is a conversational Android application that acts as your personal cricket assistant. It provides real-time information on live matches, recent results, and upcoming schedules, along with detailed match scorecards.
+CrickBot is a conversational Android application that acts as your personal cricket assistant. It provides real-time information on live matches, recent results, and upcoming schedules, along with detailed match scorecards and integrated news.
 
 ## 🚀 Features
 
 - **Real-time Scores**: Get live updates for ongoing matches across the globe.
-- **Conversational Search**: Ask about teams (e.g., "CSK", "India") or specific matchups (e.g., "India vs Pakistan").
-- **Detailed Scorecards**: View comprehensive match details including:
-  - Batting and Bowling statistics.
-  - Fall of Wickets (FOW) chips for quick visualization.
-  - Key partnerships.
-- **Multi-Day Match Support**: Properly displays scores for Test matches (1st and 2nd innings).
-- **Match discovery**: Easily find upcoming games and recent results.
+- **AI-Powered Chat**: Ask about teams, specific matchups, or general cricket trivia using the integrated Groq LLM.
+- **Dedicated News Tab**: Stay updated with the latest trending cricket news stories.
+- **Detailed Scorecards**: View comprehensive match details including batting/bowling stats and fall of wickets.
+- **Contextual Intelligence**: CrickBot uses live news and match data to provide smarter, more accurate answers.
+- **Weather Integration**: Check weather conditions for match venues.
 
 ## 🛠 Tech Stack
 
 - **UI**: [Jetpack Compose](https://developer.android.com/jetpack/compose) for a modern, reactive user interface.
 - **Language**: Kotlin.
 - **Networking**: [Retrofit](https://square.github.io/retrofit/) & OkHttp for API communication.
-- **JSON Parsing**: GSON with custom `@SerializedName` mappings for robust data handling.
+- **AI Engine**: [Groq Cloud API](https://groq.com/) for lightning-fast LLM responses.
 - **Architecture**: MVVM (Model-View-ViewModel) with State-driven UI.
-- **Asynchronous Flow**: Kotlin Coroutines and Flow for efficient background tasks.
+- **Navigation**: Modern Compose Navigation with Tabbed interface.
 
 ## 🔌 API Integration
 
-The app uses the **Cricbuzz API** via RapidAPI. 
-Endpoints integrated:
-- `matches/v1/live`
-- `matches/v1/recent`
-- `matches/v1/upcoming`
-- `mcenter/v1/{matchId}/scard`
+- **Cricbuzz API**: Real-time match data, scores, and commentary.
+- **Groq API**: Natural language processing for the cricket assistant.
+- **Weather API**: Real-time weather data for match locations.
 
 ## 📦 Getting Started
 
@@ -39,13 +34,17 @@ Endpoints integrated:
    ```
 
 2. **API Configuration**:
-   The app currently uses a hardcoded RapidAPI key in `CricketApiService.kt`. For production, replace this with your own key from [RapidAPI Cricbuzz](https://rapidapi.com/cricket-api-cricket-api-default/api/cricbuzz-cricket/).
+   Create a `local.properties` file in the root directory and add your API keys:
+   ```properties
+   GROQ_API_KEY=your_groq_api_key_here
+   WEATHER_API_KEY=your_weather_api_key_here
+   ```
+   *Note: The RapidAPI key is managed within the service configuration.*
 
 3. **Build & Run**:
    - Open the project in **Android Studio (Ladybug or newer)**.
    - Sync Gradle.
    - Run on an emulator or physical device.
-
 
 ---
 Developed with ❤️ for Cricket fans by Antick Bhattacharjee

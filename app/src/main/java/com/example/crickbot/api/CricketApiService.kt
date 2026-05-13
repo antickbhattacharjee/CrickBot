@@ -1,8 +1,9 @@
 package com.example.crickbot.api
 
 import com.example.crickbot.model.LiveMatchesResponse
-import com.example.crickbot.model.Match
+import com.example.crickbot.model.NewsResponse
 import com.example.crickbot.model.ScorecardResponse
+import com.example.crickbot.model.CommentaryResponse
 import retrofit2.Response
 import retrofit2.http.GET
 import retrofit2.http.Header
@@ -33,4 +34,17 @@ interface CricketApiService {
         @Header("x-rapidapi-key") apiKey: String = "49463dacd9mshdb62add85a5aa9cp1aa42fjsne5fad75f70e0",
         @Header("x-rapidapi-host") host: String = "cricbuzz-cricket.p.rapidapi.com"
     ): Response<ScorecardResponse>
+
+    @GET("mcenter/v1/{matchId}/comm")
+    suspend fun getCommentary(
+        @Path("matchId") matchId: Int,
+        @Header("x-rapidapi-key") apiKey: String = "49463dacd9mshdb62add85a5aa9cp1aa42fjsne5fad75f70e0",
+        @Header("x-rapidapi-host") host: String = "cricbuzz-cricket.p.rapidapi.com"
+    ): Response<CommentaryResponse>
+
+    @GET("news/v1/index")
+    suspend fun getTrendingNews(
+        @Header("x-rapidapi-key") apiKey: String = "49463dacd9mshdb62add85a5aa9cp1aa42fjsne5fad75f70e0",
+        @Header("x-rapidapi-host") host: String = "cricbuzz-cricket.p.rapidapi.com"
+    ): Response<NewsResponse>
 }

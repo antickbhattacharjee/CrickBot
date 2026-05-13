@@ -9,12 +9,21 @@ data class Message(
     val isUser: Boolean,
     val timestamp: Long = System.currentTimeMillis(),
     val matchData: Match? = null,
-    val scorecardData: ScorecardData? = null
+    val scorecardData: ScorecardData? = null,
+    val commentaryData: CommentaryData? = null,
+    val newsStories: List<StoryDetail>? = null,
+    val isError: Boolean = false,
+    val errorAction: (() -> Unit)? = null
 )
 
 data class ScorecardData(
     val matchId: Int,
     val innings: List<InningsScorecard>
+)
+
+data class CommentaryData(
+    val matchId: Int,
+    val commentary: List<Commentary>
 )
 
 data class ScorecardResponse(
@@ -90,3 +99,37 @@ data class Bowler(
     val oversDisplay: String get() = overs?.toString() ?: "0.0"
     val economyDisplay: String get() = economy?.toString() ?: "0.0"
 }
+
+// Commentary Models
+data class CommentaryResponse(
+    @SerializedName("commentaryList") val commentaryList: List<Commentary>?
+)
+
+data class Commentary(
+    @SerializedName("commText") val commText: String?,
+    @SerializedName("overNumber") val overNumber: Double?,
+    @SerializedName("timestamp") val timestamp: Long?,
+    @SerializedName("overSep") val overSep: OverSeparator?
+)
+
+data class OverSeparator(
+    @SerializedName("score") val score: Int?,
+    @SerializedName("wickets") val wickets: Int?,
+    @SerializedName("overs") val overs: Double?
+)
+
+// News Models
+data class NewsResponse(
+    @SerializedName("storyList") val storyList: List<StoryWrapper>?
+)
+
+data class StoryWrapper(
+    @SerializedName("story") val story: StoryDetail?
+)
+
+data class StoryDetail(
+    @SerializedName("id") val id: Int?,
+    @SerializedName("hline") val headline: String?,
+    @SerializedName("intro") val intro: String?,
+    @SerializedName("pubTime") val pubTime: String?
+)

@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.viewModels
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,22 +22,32 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.List
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.tooling.preview.Preview
 import com.example.crickbot.model.Match
 import com.example.crickbot.model.Message
+import com.example.crickbot.model.StoryDetail
 import com.example.crickbot.ui.CricketViewModel
 import kotlinx.coroutines.launch
 
@@ -57,8 +68,50 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ChatScreen(viewModel)
+                    MainScreen(viewModel)
                 }
+            }
+        }
+    }
+}
+
+enum class Screen(val title: String, val icon: ImageVector) {
+    Chat("Chat", Icons.Default.Home),
+    News("News", Icons.AutoMirrored.Filled.List)
+}
+
+@Composable
+fun MainScreen(viewModel: CricketViewModel) {
+    var currentScreen by remember { mutableStateOf(Screen.Chat) }
+
+    Scaffold(
+        bottomBar = {
+            NavigationBar(
+                containerColor = Color.White,
+                tonalElevation = 8.dp
+            ) {
+                Screen.entries.forEach { screen ->
+                    NavigationBarItem(
+                        icon = { Icon(screen.icon, contentDescription = screen.title) },
+                        label = { Text(screen.title) },
+                        selected = currentScreen == screen,
+                        onClick = { currentScreen = screen },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = MaterialTheme.colorScheme.primary,
+                            selectedTextColor = MaterialTheme.colorScheme.primary,
+                            unselectedIconColor = Color.Gray,
+                            unselectedTextColor = Color.Gray,
+                            indicatorColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                        )
+                    )
+                }
+            }
+        }
+    ) { padding ->
+        Box(modifier = Modifier.padding(padding)) {
+            when (currentScreen) {
+                Screen.Chat -> ChatScreen(viewModel)
+                Screen.News -> NewsScreen(viewModel)
             }
         }
     }
@@ -104,7 +157,16 @@ fun ChatScreen(viewModel: CricketViewModel) {
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.primary,
                     titleContentColor = Color.White
-                )
+                ),
+                actions = {
+                    IconButton(onClick = { viewModel.refreshData() }) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh",
+                            tint = Color.White
+                        )
+                    }
+                }
             )
         },
         bottomBar = {
@@ -152,6 +214,25 @@ fun ChatScreen(viewModel: CricketViewModel) {
         }
     ) { padding ->
         Column(modifier = Modifier.padding(padding)) {
+            // Suggested Prompts
+            if (messages.size <= 1) {
+                val suggestions = listOf("Live Matches", "IPL Updates", "Weather in London", "Who won 2011 WC?")
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    items(items = suggestions) { suggestion ->
+                        SuggestionChip(
+                            onClick = { viewModel.onSendMessage(suggestion) },
+                            label = { Text(text = suggestion, fontSize = 12.sp) },
+                            colors = SuggestionChipDefaults.suggestionChipColors(
+                                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                            )
+                        )
+                    }
+                }
+            }
+
             LazyColumn(
                 state = listState,
                 modifier = Modifier
@@ -160,11 +241,14 @@ fun ChatScreen(viewModel: CricketViewModel) {
                 contentPadding = PaddingValues(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(messages) { message ->
+                items(
+                    items = messages,
+                    key = { it.id }
+                ) { message ->
                     MessageItem(message, viewModel)
                 }
                 if (isLoading) {
-                    item {
+                    item(key = "typing_indicator") {
                         TypingIndicator()
                     }
                 }
@@ -201,22 +285,71 @@ fun MessageItem(message: Message, viewModel: CricketViewModel) {
             }
         }
         
+        // Weather Environmental Impact Card
+        if (!message.isUser && (message.text.contains("Weather in", ignoreCase = true) || (message.text.contains("impact", ignoreCase = true) && message.text.contains("pitch", ignoreCase = true)))) {
+             WeatherImpactCard(message.text)
+        }
+
         message.matchData?.let { match ->
             Spacer(modifier = Modifier.height(4.dp))
-            MatchCard(match) {
-                viewModel.fetchScorecard(match)
-            }
+            MatchCard(
+                match = match,
+                onViewDetails = { viewModel.fetchScorecard(match) },
+                onViewCommentary = { viewModel.fetchCommentary(match) }
+            )
         }
 
         message.scorecardData?.let { scorecard ->
             Spacer(modifier = Modifier.height(4.dp))
             ScorecardCard(scorecard)
         }
+
+        message.commentaryData?.let { commentary ->
+            Spacer(modifier = Modifier.height(4.dp))
+            CommentaryCard(commentary)
+        }
+
+        message.newsStories?.let { stories ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Text("Related News:", fontWeight = FontWeight.Bold, fontSize = 14.sp, modifier = Modifier.padding(start = 4.dp))
+            Spacer(modifier = Modifier.height(4.dp))
+            stories.forEach { story ->
+                NewsItem(story)
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        if (message.isError) {
+            Spacer(modifier = Modifier.height(4.dp))
+            ErrorRetryCard(message.text, message.errorAction)
+        }
     }
 }
 
 @Composable
-fun MatchCard(match: Match, onViewDetails: () -> Unit) {
+fun ErrorRetryCard(errorText: String, onRetry: (() -> Unit)?) {
+    Card(
+        modifier = Modifier.widthIn(max = 300.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.error)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text("Fetch Failed", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
+            }
+            Text(errorText, fontSize = 12.sp, modifier = Modifier.padding(vertical = 4.dp))
+            if (onRetry != null) {
+                TextButton(onClick = onRetry) {
+                    Text("Retry", fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MatchCard(match: Match, onViewDetails: () -> Unit, onViewCommentary: () -> Unit) {
     Card(
         modifier = Modifier
             .widthIn(max = 300.dp)
@@ -275,8 +408,18 @@ fun MatchCard(match: Match, onViewDetails: () -> Unit) {
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier.weight(1f)
                 )
+            }
+            
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.End
+            ) {
+                TextButton(onClick = onViewCommentary, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
+                    Text("Commentary", fontSize = 12.sp)
+                }
                 TextButton(onClick = onViewDetails, contentPadding = PaddingValues(horizontal = 8.dp, vertical = 0.dp)) {
-                    Text("Details", fontSize = 12.sp)
+                    Text("Scorecard", fontSize = 12.sp)
                 }
             }
         }
@@ -430,6 +573,286 @@ fun ScorecardCard(scorecard: com.example.crickbot.model.ScorecardData) {
                 
                 if (index < scorecard.innings.size - 1) {
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), thickness = 1.dp, color = Color.LightGray.copy(alpha = 0.5f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CommentaryCard(commentaryData: com.example.crickbot.model.CommentaryData) {
+    Card(
+        modifier = Modifier
+            .widthIn(max = 350.dp)
+            .padding(vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            commentaryData.commentary.forEachIndexed { index, comm ->
+                Row(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                    if (comm.overNumber != null) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.width(36.dp).height(24.dp)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = comm.overNumber.toString(),
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.width(12.dp))
+                    }
+                    
+                    Text(
+                        text = comm.commText ?: "",
+                        fontSize = 14.sp,
+                        lineHeight = 18.sp,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+                if (index < commentaryData.commentary.size - 1) {
+                    HorizontalDivider(thickness = 0.5.dp, color = Color.LightGray.copy(alpha = 0.5f))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun WeatherImpactCard(aiResponse: String) {
+    // Simple heuristic to see if weather info was actually included in the response
+    if (!aiResponse.contains("Weather in", ignoreCase = true)) return
+
+    Card(
+        modifier = Modifier
+            .widthIn(max = 300.dp)
+            .padding(vertical = 4.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFFE3F2FD))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Surface(
+                    color = Color.White,
+                    shape = CircleShape,
+                    modifier = Modifier.size(32.dp)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text("🌦️", fontSize = 18.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.width(12.dp))
+                Text(
+                    "Environmental Impact",
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp,
+                    color = Color(0xFF1976D2)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                "Condition analysis integrated in response. This impacts pitch behavior, swing, and potential DLS calculations.",
+                fontSize = 12.sp,
+                color = Color.DarkGray,
+                lineHeight = 16.sp
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Surface(
+                color = Color(0xFF1976D2).copy(alpha = 0.1f),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Row(
+                    modifier = Modifier.padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Info,
+                        contentDescription = null,
+                        modifier = Modifier.size(14.dp),
+                        tint = Color(0xFF1976D2)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        "AI Context Aware",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1976D2)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun NewsScreen(viewModel: CricketViewModel) {
+    val news = viewModel.trendingNews
+    val isLoading by viewModel.isLoading
+
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Trending News", fontWeight = FontWeight.Bold) },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    titleContentColor = Color.White
+                ),
+                actions = {
+                    IconButton(onClick = { viewModel.refreshData() }) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Refresh",
+                            tint = Color.White
+                        )
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        if (news.isEmpty() && isLoading) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
+            }
+        } else if (news.isEmpty()) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Text("No news available at the moment.")
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(news) { story ->
+                    NewsItem(story)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun NewsItem(story: StoryDetail, onClick: (() -> Unit)? = null) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(if (onClick != null) Modifier.clickable { onClick() } else Modifier),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(
+                text = story.headline ?: "No Headline",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = story.intro ?: "",
+                style = MaterialTheme.typography.bodyMedium,
+                color = Color.DarkGray,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+            if (story.pubTime != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                val dateStr = try {
+                    java.text.SimpleDateFormat("MMM dd, yyyy HH:mm", java.util.Locale.getDefault())
+                        .format(java.util.Date(story.pubTime.toLong()))
+                } catch (e: Exception) {
+                    story.pubTime
+                }
+                Text(
+                    text = dateStr,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.Gray
+                )
+            }
+        }
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun NewsItemPreview() {
+    val mockStory = StoryDetail(
+        id = 1,
+        headline = "India Wins Thriller Against Pakistan",
+        intro = "In a nail-biting finish at the MCG, India secured a victory on the last ball...",
+        pubTime = System.currentTimeMillis().toString()
+    )
+    MaterialTheme {
+        NewsItem(story = mockStory)
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Preview(showBackground = true)
+@Composable
+fun NewsScreenPreview() {
+    val mockStories = listOf(
+        StoryDetail(
+            id = 1,
+            headline = "India Wins Thriller Against Pakistan",
+            intro = "In a nail-biting finish at the MCG, India secured a victory on the last ball...",
+            pubTime = System.currentTimeMillis().toString()
+        ),
+        StoryDetail(
+            id = 2,
+            headline = "IPL 2024: CSK vs MI Preview",
+            intro = "The arch-rivals are set to face off in the opening match of the season at Wankhede.",
+            pubTime = (System.currentTimeMillis() - 3600000).toString()
+        ),
+        StoryDetail(
+            id = 3,
+            headline = "Weather Update: Rain Threatens London Test",
+            intro = "Clouds loom over Lord's as the second Test match between England and Australia...",
+            pubTime = (System.currentTimeMillis() - 7200000).toString()
+        )
+    )
+    
+    MaterialTheme(
+        colorScheme = lightColorScheme(
+            primary = Color(0xFF1A237E),
+            secondary = Color(0xFF00C853),
+            background = Color(0xFFF0F2F5)
+        )
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    title = { Text("Trending News", fontWeight = FontWeight.Bold) },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        titleContentColor = Color.White
+                    )
+                )
+            }
+        ) { padding ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(mockStories) { story ->
+                    NewsItem(story)
                 }
             }
         }
